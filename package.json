@@ -1,10 +1,14 @@
 {
   "name": "redux-from-void",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "The boilerplate killer for Redux.",
   "main": "index.ts",
   "author": "Vladimir Matorin",
   "license": "MIT",
+  "repository": {
+    "type" : "git",
+    "url" : "https://github.com/Farvoz/redux-from-void.git"
+  },
   "keywords": [
     "redux",
     "reducer",
