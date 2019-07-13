@@ -2,16 +2,16 @@ import { createReducer, createSelect, reactions } from "../index"
 import { createWrapDispatch } from "./helpers"
 
 
-const [ wrap ] = createWrapDispatch()
-
-
 describe('selectors', () => {
+    const [ wrap ] = createWrapDispatch()
     const [ forSelect, select ] = createSelect(state => state.profile)
 
 
     const initialState = forSelect({
         user: null,
-        byId: {}
+        byId: {
+            1: { name: 'Vika' }
+        }
     })
 
     test('initializing', () => {
@@ -26,6 +26,13 @@ describe('selectors', () => {
 
         expect(select(mainState)).toBe(initialState)
         expect(select.user(mainState)).toBe(null)
+    })
+
+    test('with pass a select helper into a reducer', () => {
+        const [ forReducerSelect, selectEntity ] = createSelect(state => state)
+        const reducer = createReducer(forReducerSelect)()
+
+        expect(selectEntity.byId(initialState, 1)).toEqual({ name: 'Vika' })
     })
 
     const { userLogged } = reactions(wrap)

@@ -120,7 +120,10 @@ export const reactions = (
  * REDUCERS
  */
 
-export const createReducer = (initialState = domainInitialState()) => (...args) => {
+export const createReducer = (initialStateOrInitFunction) => (...args) => {
+    const initialState = isFunction(initialStateOrInitFunction)
+        ? initialStateOrInitFunction(domainInitialState())
+        : initialStateOrInitFunction
     const dictionary = configureReducersDictionary(args)
 
     return (state = initialState, action) => {

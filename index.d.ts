@@ -33,7 +33,7 @@ type ReducerCreator<S> = (
 ) => Reducer<S>
 
 export function createReducer<S = any>(
-    initialState: S
+    initialStateOrInitFunction?: S | ((defaultState: S) => S)
 ): ReducerCreator<S>
 
 export const createSelect: any

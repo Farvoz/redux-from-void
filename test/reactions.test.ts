@@ -2,29 +2,22 @@ import { reactions } from "../index"
 import { createWrapDispatch } from "./helpers"
 
 
-const [ wrap, dispatch ] = createWrapDispatch()
-
-const {
-    emptyReaction,
-    numberReaction,
-    objectReaction
-} = reactions(wrap)
-
-const {
-    emptyReaction2,
-    numberReactionWithCustomChild,
-    objectReactionWithCustomChild
-} = reactions(wrap, ['custom'])
-
-
-describe('wrap', () => {
-    expect(wrap).toBeInstanceOf(Function)
-    expect(wrap.dispatchProvider.dispatch).toBeInstanceOf(Function)
-    expect(wrap.dispatchProvider.dispatch).toBe(dispatch)
-})
-
-
 describe('reactions', () => {
+    const [ wrap ] = createWrapDispatch()
+
+    const {
+        emptyReaction,
+        numberReaction,
+        objectReaction
+    } = reactions(wrap)
+
+    const {
+        emptyReaction2,
+        numberReactionWithCustomChild,
+        objectReactionWithCustomChild
+    } = reactions(wrap, ['custom'])
+
+
     test('initialize', () => {
         [
             emptyReaction,
