@@ -152,7 +152,7 @@ export const createReducer = (initialState = domainInitialState()) => (...args) 
 const BY_ID = 'byId'
 
 export const createSelect = (getSubState = identity) => {
-    const all = {}
+    const all = getSubState
 
     return [
         initialState => {
@@ -163,6 +163,8 @@ export const createSelect = (getSubState = identity) => {
                     case BY_ID:
                         all[ key ] = (state, id) => {
                             const entity = getSubState(state)[ key ][ id ]
+
+                            // check for null and undefined
                             return entity == null ? {} : entity
                         }
                         break

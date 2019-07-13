@@ -1,12 +1,8 @@
-import { createWrap, reactions } from "../index"
+import { reactions } from "../index"
+import { createWrapDispatch } from "./helpers"
 
 
-const wrap = createWrap()
-
-const dispatch = obj => obj
-const fakeStore = wrap({
-    dispatch
-})
+const [ wrap, dispatch ] = createWrapDispatch()
 
 const {
     emptyReaction,
@@ -19,6 +15,7 @@ const {
     numberReactionWithCustomChild,
     objectReactionWithCustomChild
 } = reactions(wrap, ['custom'])
+
 
 describe('wrap', () => {
     expect(wrap).toBeInstanceOf(Function)

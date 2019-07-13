@@ -1,13 +1,9 @@
-import { createReducer, createWrap, reactions } from "../index"
+import { createReducer, reactions } from "../index"
+import { createWrapDispatch } from "./helpers"
 
 
+const [ wrap ] = createWrapDispatch()
 const initialState = {}
-const wrap = createWrap()
-
-const dispatch = obj => obj
-const fakeStore = wrap({
-    dispatch
-})
 
 const {
     resetReaction,
@@ -15,6 +11,7 @@ const {
     numberReaction,
     objectReaction
 } = reactions(wrap)
+
 
 describe('createReducer', () => {
     const prevState = { someKey: 'someValue', andOther: [] }

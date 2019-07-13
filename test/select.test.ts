@@ -1,4 +1,8 @@
-import { createReducer, createSelect, createWrap, reactions } from "../index"
+import { createReducer, createSelect, reactions } from "../index"
+import { createWrapDispatch } from "./helpers"
+
+
+const [ wrap ] = createWrapDispatch()
 
 
 describe('selectors', () => {
@@ -11,6 +15,7 @@ describe('selectors', () => {
     })
 
     test('initializing', () => {
+        expect(select).toBeInstanceOf(Function)
         expect(select.user).toBeInstanceOf(Function)
     })
 
@@ -19,13 +24,10 @@ describe('selectors', () => {
             profile: initialState
         }
 
+        expect(select(mainState)).toBe(initialState)
         expect(select.user(mainState)).toBe(null)
     })
 
-
-    const wrap = createWrap()
-    const dispatch = obj => obj
-    wrap({ dispatch })
     const { userLogged } = reactions(wrap)
 
     const reducer = createReducer(initialState)(
