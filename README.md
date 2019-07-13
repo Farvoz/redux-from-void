@@ -1,11 +1,11 @@
 The boilerplate killer for Redux.
 
 ## About
-The package in early development. Don't use in production.
+The package is in early development. Please don't use it in production.
 
 ## Developer Experience
 
-Developer experience improvement is the main goal of this package.
+The main goal of this package is to improve developer experience.
 
 ## Installation
 
@@ -43,7 +43,7 @@ import { reactions } from 'redux-from-void'
 import { wrap } from './configureStore'
 
 
-// Create an reactions(). This is an action factory. First argument must be wrap().
+// Create reactions(). This is an action factory. First argument must be wrap().
 const {
     pageLoaded,
 } = reactions(wrap)
@@ -63,7 +63,7 @@ import { reactions } from 'redux-from-void'
 import { wrap } from './configureStore'
 
 
-// Create an reactions(). This is an action factory. First argument must be wrap().
+// Create reactions(). This is an action factory. First argument must be wrap().
 // Second argument is an array of a name for children.
 const {
     login
