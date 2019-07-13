@@ -120,7 +120,10 @@ export const reactions = (
  * REDUCERS
  */
 
-export const createReducer = (initialState = domainInitialState()) => (...args) => {
+export const createReducer = (initialStateOrInitFunction) => (...args) => {
+    const initialState = isFunction(initialStateOrInitFunction)
+        ? initialStateOrInitFunction(domainInitialState())
+        : initialStateOrInitFunction
     const dictionary = configureReducersDictionary(args)
 
     return (state = initialState, action) => {
@@ -152,7 +155,7 @@ export const createReducer = (initialState = domainInitialState()) => (...args) 
 const BY_ID = 'byId'
 
 export const createSelect = (getSubState = identity) => {
-    const all = {}
+    const all = getSubState
 
     return [
         initialState => {
@@ -163,6 +166,8 @@ export const createSelect = (getSubState = identity) => {
                     case BY_ID:
                         all[ key ] = (state, id) => {
                             const entity = getSubState(state)[ key ][ id ]
+
+                            // check for null and undefined
                             return entity == null ? {} : entity
                         }
                         break

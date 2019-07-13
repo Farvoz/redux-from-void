@@ -1,33 +1,23 @@
-import { createWrap, reactions } from "../index"
-
-
-const wrap = createWrap()
-
-const dispatch = obj => obj
-const fakeStore = wrap({
-    dispatch
-})
-
-const {
-    emptyReaction,
-    numberReaction,
-    objectReaction
-} = reactions(wrap)
-
-const {
-    emptyReaction2,
-    numberReactionWithCustomChild,
-    objectReactionWithCustomChild
-} = reactions(wrap, ['custom'])
-
-describe('wrap', () => {
-    expect(wrap).toBeInstanceOf(Function)
-    expect(wrap.dispatchProvider.dispatch).toBeInstanceOf(Function)
-    expect(wrap.dispatchProvider.dispatch).toBe(dispatch)
-})
+import { reactions } from "../index"
+import { createWrapDispatch } from "./helpers"
 
 
 describe('reactions', () => {
+    const [ wrap ] = createWrapDispatch()
+
+    const {
+        emptyReaction,
+        numberReaction,
+        objectReaction
+    } = reactions(wrap)
+
+    const {
+        emptyReaction2,
+        numberReactionWithCustomChild,
+        objectReactionWithCustomChild
+    } = reactions(wrap, ['custom'])
+
+
     test('initialize', () => {
         [
             emptyReaction,

@@ -1,11 +1,11 @@
 The boilerplate killer for Redux.
 
 ## About
-The package in early development. Don't use in production.
+The package is in early development. Please don't use it in production.
 
 ## Developer Experience
 
-Developer experience improvement is the main goal of this package.
+The main goal of this package is to improve developer experience.
 
 ## Installation
 
@@ -16,7 +16,7 @@ yarn add redux-from-void
 ```
 
 ## Preparation
-```
+```js
 import { createStore } from 'redux'
 import { createWrap } from 'redux-from-void'
 import rootReducer from './reducers'
@@ -38,12 +38,12 @@ export default configureStore
 ## Using
 ### Actions
 #### A Simple Action
-```
+```js
 import { reactions } from 'redux-from-void'
 import { wrap } from './configureStore'
 
 
-// Create an reactions(). This is an action factory. First argument must be wrap().
+// Create reactions(). This is an action factory. First argument must be wrap().
 const {
     pageLoaded,
 } = reactions(wrap)
@@ -58,12 +58,12 @@ pageLoaded()
 ```
 
 #### An Action With Children
-```
+```js
 import { reactions } from 'redux-from-void'
 import { wrap } from './configureStore'
 
 
-// Create an reactions(). This is an action factory. First argument must be wrap().
+// Create reactions(). This is an action factory. First argument must be wrap().
 // Second argument is an array of a name for children.
 const {
     login
@@ -81,7 +81,7 @@ login.failed()      // LOGIN_FAILED
 
 #### Dispatching An Action
 Flux architecture. https://github.com/redux-utilities/flux-standard-action
-```
+```js
 action()                            // { type: 'ACTION',             payload: undefined        }
 actionWithValue('value')            // { type: 'ACTION_WITH_VALUE',  payload: 'value'          }
 actionWithObject({ key: 'value' })  // { type: 'ACTION_WITH_OBJECT', payload: { key: 'value' } }
@@ -94,7 +94,7 @@ action.child.type                   // ACTION_CHILD
 ```
 
 #### Additional params
-```
+```js
 reactions(wrap, [], {
     formatter: camelCaseToConstCase,  // The function for fomatting an action type.
     separator: '_'
@@ -104,7 +104,7 @@ reactions(wrap, [], {
 ## Reducers
 ### A Simple Reducer
 Reducer is a smart reducer. It merges state and prev state into one.
-```
+```js
 import { createReducer } from 'redux-from-void'
 
 
@@ -133,13 +133,20 @@ const reducer = createReducer(initialState)(
 )
 ```
 ### Default initial state
+By default createReducer will create a reducer with initialState  ```{ allIds: [], byId: {} }```
+```js
+const reducer = createReducer()(...)
 ```
-const initialState = { allIds: [], byId: {} }
+If createReducer takes function it will be calling with default initialState
+```js
+const initFunction = initialState => ...anotherState
+
+const reducer = createReducer(initFunction)(...)
 ```
 
 ### Types Of Branches
 - Branch is an object (set without merge).
-```
+```js
 ...
 
 action,
@@ -149,7 +156,7 @@ action,
 ```
 
 - Branch is a function that return an object (merge).
-```
+```js
 // The first argument is a prev state, the second one is an action.
 ...
 
@@ -160,7 +167,7 @@ action,
 
 ```
 - Branch is a function that return an another function that return an object (set without merge).
-```
+```js
 // The first argument is a prev state, the second one is an action.
 ...
 
@@ -171,8 +178,11 @@ action,
 ```
 
 ## Selectors
-### A Simple Selector 
-```
+### A Simple Selector
+```createSelect``` return tuple of:
+1. ```forSelect``` A service function. Must be calling with an initialState.
+2. ```select```    A core selector with selectors for every keys in an initialState. 
+```js
 import { createSelect } from 'redux-from-void'
 
 
@@ -185,36 +195,77 @@ const initialState = forSelect({
     property2: 100
 })
 
+// State:
+const globalState = {
+    ...
+    someReducer: {
+         property1: false,
+         property2: 100
+    }
+}
+
 
 // Using
-select.property1(initialState)  // false
-select.property2(initialState)  // 100
+select(globalState)            // { property1: false, property2: 100 } 
+select.property1(globalState)  // false
+select.property2(globalState)  // 100
 ```
 
 ### A Smart Selector
-```
-export const [ forSelect, selectEntity ] = createSelect((state: any) => state.domainReducer)
+```js
+import { createSelect } from 'redux-from-void'
+
+
+export const [ forSelect, selectEntity ] = createSelect(state => state.domainReducer)
 
 const initialState = forSelect({
     byId: [],
     allIds: {}
 })
 
-
-// Using
-const someState = {
-    allIds: [ 1 ],
-    byId: {
-        1: {
-            key: 'value'
+// State:
+const globalState = {
+    ...
+    domainReducer: {
+        allIds: [ 1 ],
+        byId: {
+            1: {
+                key: 'value'
+            }
         }
     }
 }
 
 // The second argument is an entity id.
-selectEntity.byId(someState, 1).key  // 'value'
-selectEntity.allIds(someState)       // [ 1 ]
+selectEntity(globalState)              // { allIds: [ 1 ], byId: { 1: { key: 'value' } } }
+selectEntity.byId(globalState, 1).key  // 'value'
+selectEntity.allIds(globalState)       // [ 1 ]
 ```
+
+### Reducer with a selecor init function
+```createReducer``` may takes an init function instead an initial state
+```js
+import { createSelect, createReducer } from 'redux-from-void'
+
+
+export const [ forSelect, selectEntity ] = createSelect(state => state.domainReducer)
+
+const reducer = createReducer(forSelect)(...)
+
+// State:
+const globalState = {
+    ...
+    domainReducer: {
+        allIds: [],
+        byId: {}
+    }
+}
+
+...
+
+selectEntity(globalState)              // { allIds: [], byId: {} }
+```
+
 
 To be continue...
 
