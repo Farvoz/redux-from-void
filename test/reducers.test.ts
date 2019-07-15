@@ -1,4 +1,4 @@
-import { createReducer, reactions } from "../index"
+import { createReactionSet, createReducer, reactions } from "../index"
 import { createWrapDispatch } from "./helpers"
 
 
@@ -45,5 +45,32 @@ describe('createReducer', () => {
             reducer(prevState, resetReaction()),
             numberReaction(123)
         )).toEqual({ someKey: undefined, newKey: 123 })
+    })
+
+    test('an array of reactions', () => {
+        const initialState = { count: 0 }
+        const $et = createReactionSet()
+        const {
+            reset,
+            reaction1,
+            reaction2
+        } = reactions(wrap, [ 'done' ], { reactionSet: $et })
+
+        const reducer = createReducer(initialState)(
+            ...$et,
+            ({ count }) => ({ count: count + 1 }),
+
+            reset,
+            initialState
+        )
+
+        const newState = reducer(
+            reducer(initialState, reaction1()),
+            reaction2()
+        )
+
+        expect(newState).toEqual({ count: 2 })
+
+        expect(reducer(newState, reset())).toEqual(initialState)
     })
 })

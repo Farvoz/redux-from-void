@@ -92,15 +92,18 @@ actionWithValue.type                // ACTION_WITH_VALUE
 actionWithObject.type               // ACTION_WITH_OBJECT
 action.child.type                   // ACTION_CHILD
 ```
-#### A Children Set
-Sometimes there is need for a set of children reactions.
-```
+#### A Reaction Set
+Sometimes there is need for a set of reactions and its children.
+```js
+import { createReactionSet, reactions } from 'redux-from-void'
+
+
+const $et = createReactionSet()                            
+
 const {
-    $et,                            // This is the children set.
-    
     login,
-    logouh
-} = reactions(wrap, [ 'succeeded', 'failed' ]);
+    logout
+} = reactions(wrap, [ 'succeeded', 'failed' ], { reactionSet: $et });
 
 // $et             equals [ login,           logout           ]
 // $et.succeeded   equals [ login.succeeded, logout.succeeded ] 
@@ -112,7 +115,7 @@ const {
 reactions(wrap, [], {
     formatter: camelCaseToConstCase,  // The function for fomatting an action type.
     separator: '_',                   // The separator between main and child name of a reaction. 
-    setName: DEFAULT_SET_NAME         // $et
+    reactionSet: []                   // $et
 })
 ```
 

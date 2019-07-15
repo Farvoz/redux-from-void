@@ -23,10 +23,14 @@ interface ReactionsFactory {
     [ propName: string ]: Reaction
 }
 
+type ReactionSet = Array<Reaction>
+
+export function createReactionSet(): ReactionSet
+
 interface ReactionsConfig {
     formatter?: (inputString: string) => string,
     separator?: string,
-    setName?: string
+    reactionSet?: ReactionSet
 }
 
 export function reactions(

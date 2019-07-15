@@ -1,4 +1,4 @@
-import { reactions } from "../index"
+import { createReactionSet, reactions } from "../index"
 import { createWrapDispatch } from "./helpers"
 
 
@@ -57,12 +57,12 @@ describe('reactions', () => {
     test('a default children set', () => {
         const childName1 = 'failed'
         const childName2 = 'succeeded'
+        const $et = createReactionSet()
         const {
-            $et,
             fetchData,
             login,
             logout
-        } = reactions(wrap, [ childName1, childName2 ])
+        } = reactions(wrap, [ childName1, childName2 ], { reactionSet: $et })
 
         expect($et).toBeInstanceOf(Array)
         expect($et.map(r => r.type)).toEqual([
@@ -73,20 +73,6 @@ describe('reactions', () => {
         ])
         expect($et[ childName2 ].map(r => r.type)).toEqual([
             fetchData[ childName2 ].type, login[ childName2 ].type, logout[ childName2 ].type
-        ])
-
-        const {
-            _set,
-            action1,
-            action2
-        } = reactions(wrap, [ 'done' ], { setName: '_set' })
-
-        expect(_set.done).toBeInstanceOf(Array)
-        _set.done.forEach(reaction => {
-            expect(reaction).toBeInstanceOf(Function)
-        })
-        expect(_set.done.map(r => r.type)).toEqual([
-            action1.done.type, action2.done.type
         ])
     })
 })

@@ -49,7 +49,6 @@ const configureReducersDictionary = reducers => {
 
     return dictionary
 }
-const DEFAULT_SET_NAME = '$et'
 
 /**
  * FOR EXPORT:
@@ -91,19 +90,18 @@ export const reactions = (
     childrenNames = [],
     config
 ) => {
-    const { formatter, separator, setName } = {
+    const { formatter, separator, reactionSet } = {
         formatter: camelCaseToConstCase,
         separator: '_',
-        setName: DEFAULT_SET_NAME,
+        reactionSet: [],
         ...config,
     }
-    const childrenSet = childrenNames.reduce((acc, childName) => ({ ...acc, [ childName ]: [] }), [])
+    childrenNames.forEach(childName => {
+        reactionSet[ childName ] = []
+    })
 
     return new Proxy({}, {
         get(_, prop) {
-            if (prop === setName)
-                return childrenSet
-
             const propForLog = formatter(prop)
             const reactionCreator = createReaction(propForLog)
 
@@ -111,7 +109,7 @@ export const reactions = (
             dispatchReaction.type = propForLog
             dispatchReaction.isActionCreator = true
 
-            childrenSet.push(dispatchReaction)
+            reactionSet.push(dispatchReaction)
 
             childrenNames.forEach(name => {
                 const childPropForLog = propForLog + separator + formatter(name)
@@ -121,13 +119,15 @@ export const reactions = (
                 dispatchReaction[name].type = childPropForLog
                 dispatchReaction[name].isActionCreator = true
 
-                childrenSet[name].push(dispatchReaction[name])
+                reactionSet[name].push(dispatchReaction[name])
             })
 
             return dispatchReaction
         }
     })
 }
+
+export const createReactionSet = () => []
 
 
 /**
