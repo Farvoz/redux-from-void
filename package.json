@@ -6,8 +6,8 @@
   "author": "Vladimir Matorin",
   "license": "MIT",
   "repository": {
-    "type" : "git",
-    "url" : "https://github.com/Farvoz/redux-from-void.git"
+    "type": "git",
+    "url": "https://github.com/Farvoz/redux-from-void.git"
   },
   "keywords": [
     "redux",
@@ -35,7 +35,6 @@
     "@babel/preset-env": "^7.4.5",
     "@babel/preset-typescript": "^7.3.3",
     "@types/jest": "^24.0.13",
-    "@types/redux": "^3.6.0",
     "babel-jest": "^24.8.0",
     "jest": "^24.8.0",
     "redux": "^4.0.1"
