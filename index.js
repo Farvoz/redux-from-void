@@ -49,7 +49,7 @@ const configureReducersDictionary = reducers => {
 
     return dictionary
 }
-
+const DEFAULT_SET_NAME = '$et'
 
 /**
  * FOR EXPORT:
@@ -89,31 +89,45 @@ export const createWrap = () => {
 export const reactions = (
     wrap,
     childrenNames = [],
-    { formatter, separator } = {
+    config
+) => {
+    const { formatter, separator, setName } = {
         formatter: camelCaseToConstCase,
-        separator: '_'
+        separator: '_',
+        setName: DEFAULT_SET_NAME,
+        ...config,
     }
-) => new Proxy({}, {
-    get(_, prop) {
-        const propForLog = formatter(prop)
-        const reactionCreator = createReaction(propForLog)
+    const childrenSet = childrenNames.reduce((acc, childName) => ({ ...acc, [ childName ]: [] }), [])
 
-        const dispatchReaction = (...args) => wrap.dispatchProvider.dispatch(reactionCreator(...args))
-        dispatchReaction.type = propForLog
-        dispatchReaction.isActionCreator = true
+    return new Proxy({}, {
+        get(_, prop) {
+            if (prop === setName)
+                return childrenSet
 
-        childrenNames.forEach(name => {
-            const childPropForLog = propForLog + separator + formatter(name)
-            const childReactionCreator = createReaction(childPropForLog)
+            const propForLog = formatter(prop)
+            const reactionCreator = createReaction(propForLog)
 
-            dispatchReaction[name] = (...args) => wrap.dispatchProvider.dispatch(childReactionCreator(...args))
-            dispatchReaction[name].type = childPropForLog
-            dispatchReaction[name].isActionCreator = true
-        })
+            const dispatchReaction = (...args) => wrap.dispatchProvider.dispatch(reactionCreator(...args))
+            dispatchReaction.type = propForLog
+            dispatchReaction.isActionCreator = true
 
-        return dispatchReaction
-    }
-})
+            childrenSet.push(dispatchReaction)
+
+            childrenNames.forEach(name => {
+                const childPropForLog = propForLog + separator + formatter(name)
+                const childReactionCreator = createReaction(childPropForLog)
+
+                dispatchReaction[name] = (...args) => wrap.dispatchProvider.dispatch(childReactionCreator(...args))
+                dispatchReaction[name].type = childPropForLog
+                dispatchReaction[name].isActionCreator = true
+
+                childrenSet[name].push(dispatchReaction[name])
+            })
+
+            return dispatchReaction
+        }
+    })
+}
 
 
 /**

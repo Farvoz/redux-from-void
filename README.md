@@ -92,12 +92,27 @@ actionWithValue.type                // ACTION_WITH_VALUE
 actionWithObject.type               // ACTION_WITH_OBJECT
 action.child.type                   // ACTION_CHILD
 ```
+#### A Children Set
+Sometimes there is need for a set of children reactions.
+```
+const {
+    $et,                            // This is the children set.
+    
+    login,
+    logouh
+} = reactions(wrap, [ 'succeeded', 'failed' ]);
+
+// $et             equals [ login,           logout           ]
+// $et.succeeded   equals [ login.succeeded, logout.succeeded ] 
+// $et.failed      equals [ login.failed,    logout.failed    ]
+```
 
 #### Additional params
 ```js
 reactions(wrap, [], {
     formatter: camelCaseToConstCase,  // The function for fomatting an action type.
-    separator: '_'
+    separator: '_',                   // The separator between main and child name of a reaction. 
+    setName: DEFAULT_SET_NAME         // $et
 })
 ```
 

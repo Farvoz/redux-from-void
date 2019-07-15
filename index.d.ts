@@ -23,9 +23,16 @@ interface ReactionsFactory {
     [ propName: string ]: Reaction
 }
 
+interface ReactionsConfig {
+    formatter?: (inputString: string) => string,
+    separator?: string,
+    setName?: string
+}
+
 export function reactions(
     wrap: Wrapper,
-    childrenNames?: string[]
+    childrenNames?: string[],
+    config?: ReactionsConfig
 ): ReactionsFactory
 
 type ReducerCreator<S> = (

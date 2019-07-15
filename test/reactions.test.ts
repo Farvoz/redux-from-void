@@ -53,4 +53,40 @@ describe('reactions', () => {
         expect(numberReactionWithCustomChild.custom(123)).toEqual({ type: 'NUMBER_REACTION_WITH_CUSTOM_CHILD_CUSTOM', payload: 123 })
         expect(objectReactionWithCustomChild.custom({ id: 123 })).toEqual({ type: 'OBJECT_REACTION_WITH_CUSTOM_CHILD_CUSTOM', payload: { id: 123 } })
     })
+
+    test('a default children set', () => {
+        const childName1 = 'failed'
+        const childName2 = 'succeeded'
+        const {
+            $et,
+            fetchData,
+            login,
+            logout
+        } = reactions(wrap, [ childName1, childName2 ])
+
+        expect($et).toBeInstanceOf(Array)
+        expect($et.map(r => r.type)).toEqual([
+            fetchData.type, login.type, logout.type
+        ])
+        expect($et[ childName1 ].map(r => r.type)).toEqual([
+            fetchData[ childName1 ].type, login[ childName1 ].type, logout[ childName1 ].type
+        ])
+        expect($et[ childName2 ].map(r => r.type)).toEqual([
+            fetchData[ childName2 ].type, login[ childName2 ].type, logout[ childName2 ].type
+        ])
+
+        const {
+            _set,
+            action1,
+            action2
+        } = reactions(wrap, [ 'done' ], { setName: '_set' })
+
+        expect(_set.done).toBeInstanceOf(Array)
+        _set.done.forEach(reaction => {
+            expect(reaction).toBeInstanceOf(Function)
+        })
+        expect(_set.done.map(r => r.type)).toEqual([
+            action1.done.type, action2.done.type
+        ])
+    })
 })
