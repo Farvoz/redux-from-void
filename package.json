@@ -1,6 +1,6 @@
 {
   "name": "redux-from-void",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "The boilerplate killer for Redux.",
   "main": "index.ts",
   "author": "Vladimir Matorin",
