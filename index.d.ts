@@ -23,7 +23,7 @@ interface ReactionsFactory {
     [ propName: string ]: Reaction
 }
 
-type ReactionSet = Array<Reaction>
+type ReactionSet = any
 
 export function createReactionSet(): ReactionSet
 

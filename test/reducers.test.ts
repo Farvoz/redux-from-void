@@ -60,17 +60,24 @@ describe('createReducer', () => {
             ...$et,
             ({ count }) => ({ count: count + 1 }),
 
+            ...$et.done,
+            ({ count }) => ({ count: count + 10 }),
+
             reset,
             initialState
         )
 
-        const newState = reducer(
+        const newState1 = reducer(
             reducer(initialState, reaction1()),
             reaction2()
         )
 
-        expect(newState).toEqual({ count: 2 })
+        expect(newState1).toEqual({ count: 2 })
 
-        expect(reducer(newState, reset())).toEqual(initialState)
+        const newState2 = reducer(newState1, reaction2.done())
+
+        expect(newState2).toEqual({ count: 12 })
+
+        expect(reducer(newState2, reset())).toEqual(initialState)
     })
 })

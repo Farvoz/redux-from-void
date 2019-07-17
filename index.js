@@ -170,6 +170,7 @@ const BY_ID = 'byId'
 
 export const createSelect = (getSubState = identity) => {
     const all = getSubState
+    const defineProperty = (key, value) => Object.defineProperty(all, key, { value })
 
     return [
         initialState => {
@@ -178,15 +179,15 @@ export const createSelect = (getSubState = identity) => {
             keys.forEach(key => {
                 switch (key) {
                     case BY_ID:
-                        all[ key ] = (state, id) => {
+                        defineProperty(key, (state, id) => {
                             const entity = getSubState(state)[ key ][ id ]
 
                             // check for null and undefined
                             return entity == null ? {} : entity
-                        }
+                        })
                         break
                     default:
-                        all[ key ] = state => getSubState(state)[ key ]
+                        defineProperty(key, state => getSubState(state)[ key ])
                 }
             })
 
