@@ -1,8 +1,8 @@
 {
   "name": "redux-from-void",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "The boilerplate killer for Redux.",
-  "main": "index.ts",
+  "main": "lib/index.js",
   "author": "Vladimir Matorin",
   "license": "MIT",
   "repository": {
@@ -28,13 +28,15 @@
   "typings": "./index.d.ts",
   "scripts": {
     "test": "jest",
-    "test:watch": "yarn test -- --watchAll"
+    "test:watch": "yarn test -- --watchAll",
+    "build": "babel src -d lib"
   },
   "devDependencies": {
     "@babel/core": "^7.4.5",
     "@babel/preset-env": "^7.4.5",
     "@babel/preset-typescript": "^7.3.3",
     "@types/jest": "^24.0.13",
+    "@babel/cli": "^7.7.7",
     "babel-jest": "^24.8.0",
     "jest": "^24.8.0",
     "redux": "^4.0.1"

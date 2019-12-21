@@ -1,4 +1,4 @@
-import { createReactionSet, createReducer, reactions } from "../index"
+import { createReactionSet, createReducer, reactions } from "../src/index"
 import { createWrapDispatch } from "./helpers"
 
 
