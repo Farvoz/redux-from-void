@@ -6,7 +6,7 @@
  */
 
 const identity = value => value
-const createReaction = type => payload => ({ type, payload })
+const defaultCreateReaction = type => payload => ({ type, payload })
 
 const isLetterInLowerCase = l => l.toLowerCase() === l
 const isLetterInUpperCase = l => !isLetterInLowerCase(l)
@@ -90,10 +90,11 @@ export const reactions = (
     childrenNames = [],
     config
 ) => {
-    const { formatter, separator, reactionSet } = {
+    const { formatter, separator, reactionSet, createReaction } = {
         formatter: camelCaseToConstCase,
         separator: '_',
         reactionSet: [],
+        createReaction: defaultCreateReaction,
         ...config,
     }
     childrenNames.forEach(childName => {
