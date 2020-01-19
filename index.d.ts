@@ -31,6 +31,7 @@ interface ReactionsConfig {
     formatter?: (inputString: string) => string,
     separator?: string,
     reactionSet?: ReactionSet
+    createReaction?: Function
 }
 
 export function reactions(
