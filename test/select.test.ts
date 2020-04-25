@@ -3,16 +3,16 @@ import { createWrapDispatch } from "./helpers"
 
 
 describe('selectors', () => {
-    interface InitialState {
+    interface StateSlice {
         user: string
         byId: Object
     }
     interface State {
-        profile: InitialState
+        profile: StateSlice
     }
 
     const [ wrap ] = createWrapDispatch()
-    const [ forSelect, select ] = createSelect<State, InitialState>(state => state.profile)
+    const [ forSelect, select ] = createSelect<State, StateSlice>(state => state.profile)
 
     const initialState = forSelect({
         user: 'null',
@@ -33,17 +33,12 @@ describe('selectors', () => {
 
         expect(select(mainState)).toBe(initialState)
         expect(select.user(mainState)).toBe('null')
-    })
-
-    test('with pass a select helper into a reducer', () => {
-        const [ forReducerSelect, selectEntity ] = createSelect(state => state)
-        const reducer = createReducer(forReducerSelect)()
-
-        expect(selectEntity.byId(initialState, 1)).toEqual({ name: 'Vika' })
+        expect(select.byId(mainState)).toEqual({ 1: { name: 'Vika' } })
+        expect(select.byId(mainState)[ 1 ]).toEqual({ name: 'Vika' })
+        expect(select.byId(mainState)[ 2 ]).toBeUndefined()
     })
 
     const { userLogged } = reactions(wrap)
-
     const reducer = createReducer(initialState)(
         userLogged,
         () => ({ 
@@ -58,10 +53,5 @@ describe('selectors', () => {
 
     test('select after reducing', () => {
         expect(select.user(mainState)).toEqual('Sanya')
-    })
-
-    test('select by id', () => {
-        expect(select.byId(mainState, 2).name).toBe('Slava')
-        expect(select.byId(mainState, 4).name).toBeUndefined()
     })
 })

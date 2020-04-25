@@ -245,46 +245,32 @@ export const createReducer = <S>(initialStateOrInitFunction?: S | DomainStateIni
  * SELECTORS
  */
 
-const BY_ID = 'byId'
-
-interface SelectorWrapper<P> {
-    (stateSlice: P): P
+interface SelectorWrapper<Slice> {
+    (stateSlice: Slice): Slice
 }
 
-interface StateExtractor<S, P> {
-    (state: S): P
+interface StateExtractor<State, Slice> {
+    (state: State): Slice
 }
 
-type UniversalSelector<S, P, K extends keyof P> = {
-    (state: any): S
+type UniversalSelector<State, Slice, K extends keyof Slice> = {
+    (state: State): Slice
 } & {
-    [ key in K ]: StateExtractor<S, any>
-} & {
-    [ BY_ID ]: (state: any, id: number) => any
+    [ key in K ]: StateExtractor<State, Slice[ key ]>
 }
 
-export function createSelect<S, P>(getSubState: StateExtractor<S, P> = identity)
-    : [ SelectorWrapper<P>, UniversalSelector<S, P, keyof P> ] {
+export function createSelect<State, Slice>(getSubState: StateExtractor<State, Slice> = identity)
+    : [ SelectorWrapper<Slice>, UniversalSelector<State, Slice, keyof Slice> ] {
     const all: any = getSubState
-    const defineProperty = (key, value) => Object.defineProperty(all, key, { value })
+    const defineProperty = (key: string, value: (state: State) => Slice) => 
+        Object.defineProperty(all, key, { value })
 
     return [
         initialState => {
             const keys = Object.keys(initialState)
 
             keys.forEach(key => {
-                switch (key) {
-                    case BY_ID:
-                        defineProperty(key, (state, id) => {
-                            const entity = getSubState(state)[ key ][ id ]
-
-                            // check for null and undefined
-                            return entity == null ? {} : entity
-                        })
-                        break
-                    default:
-                        defineProperty(key, state => getSubState(state)[ key ])
-                }
+                defineProperty(key, state => getSubState(state)[ key ])
             })
 
             return initialState
