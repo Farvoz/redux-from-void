@@ -4,7 +4,7 @@ import { createWrapDispatch } from "./helpers"
 
 describe('selectors', () => {
     interface InitialState {
-        user: null
+        user: string
         byId: Object
     }
     interface State {
@@ -15,7 +15,7 @@ describe('selectors', () => {
     const [ forSelect, select ] = createSelect<State, InitialState>(state => state.profile)
 
     const initialState = forSelect({
-        user: null,
+        user: 'null',
         byId: {
             1: { name: 'Vika' }
         }
@@ -32,7 +32,7 @@ describe('selectors', () => {
         }
 
         expect(select(mainState)).toBe(initialState)
-        expect(select.user(mainState)).toBe(null)
+        expect(select.user(mainState)).toBe('null')
     })
 
     test('with pass a select helper into a reducer', () => {

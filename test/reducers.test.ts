@@ -4,7 +4,18 @@ import { createWrapDispatch } from "./helpers"
 
 describe('createReducer', () => {
     const [ wrap ] = createWrapDispatch()
-    const initialState = {}
+
+    const initState = { 
+        someKey: 'someValue', 
+        newKey: 0,
+        andOther: [] 
+    }
+
+    const nextState = {
+        someKey: '',
+        newKey: 1,
+        andOther: []
+    }
 
     const {
         resetReaction,
@@ -13,42 +24,53 @@ describe('createReducer', () => {
         objectReaction
     } = reactions(wrap)
 
-    const prevState = { someKey: 'someValue', andOther: [] }
-
     test('without a first argument', () => {
         const reducer = createReducer()()
 
         expect(reducer).toBeInstanceOf(Function)
-        expect(reducer(prevState, objectReaction())).toBe(prevState)
+        expect(reducer(initState, objectReaction())).toBe(initState)
     })
 
     test('a state after a reducer calling', () => {
-        const reducer = createReducer(initialState)(
+        const reducer = createReducer(nextState)(
             resetReaction,
-            initialState,
+            nextState,
 
             stringReaction,
-            'string',
+            () => ({ someKey: 'string' }),
 
             numberReaction,
-            (state, { payload }) => () => ({ someKey: state.someKey, newKey: payload }),
+            (state, { payload }) => () => ({ 
+                someKey: state.someKey, 
+                newKey: payload,
+                andOther: [ 'andOther' ]
+            }),
 
             objectReaction,
             (_, { payload: { andOther } }) => ({ andOther })
         )
 
-        expect(reducer(prevState, resetReaction())).toEqual({})
-        expect(reducer(prevState, stringReaction())).toEqual('string')
-        expect(reducer(prevState, objectReaction({ andOther: 'yeah!' }))).toEqual({ someKey: 'someValue', andOther: 'yeah!' })
+        expect(reducer(initState, resetReaction())).toEqual(nextState)
+        expect(reducer(initState, stringReaction())).toEqual({ 
+            ...initState,
+            someKey: 'string'
+        })
+        expect(reducer(initState, objectReaction({ andOther: [ 'yeah!' ] }))).toEqual(
+            { ...initState, andOther: [ 'yeah!' ] }
+        )
 
         expect(reducer(
-            reducer(prevState, resetReaction()),
+            reducer(initState, resetReaction()),
             numberReaction(123)
-        )).toEqual({ someKey: undefined, newKey: 123 })
+        )).toEqual({
+            ...nextState,
+            newKey: 123,
+            andOther: [ 'andOther' ]
+        })
     })
 
     test('an array of reactions', () => {
-        const initialState = { count: 0 }
+        const nextState = { count: 0 }
         const $et = createReactionSet()
         const {
             reset,
@@ -56,19 +78,27 @@ describe('createReducer', () => {
             reaction2
         } = reactions(wrap, [ 'done' ], { reactionSet: $et })
 
-        const reducer = createReducer(initialState)(
+        const {
+            reactionWithoutSet
+        } = reactions(wrap, [ 'ww' ])
+
+        const handler = ({ count }) => ({ count: count + 1 })
+        const handler2 = ({ count }) => ({ count: count + 10 })
+
+        const reducer = createReducer(nextState)(
             ...$et,
-            ({ count }) => ({ count: count + 1 }),
+            handler,
 
             ...$et.done,
-            ({ count }) => ({ count: count + 10 }),
+            handler2,
 
             reset,
-            initialState
+            reactionWithoutSet.ww,
+            nextState
         )
 
         const newState1 = reducer(
-            reducer(initialState, reaction1()),
+            reducer(nextState, reaction1()),
             reaction2()
         )
 
@@ -78,6 +108,6 @@ describe('createReducer', () => {
 
         expect(newState2).toEqual({ count: 12 })
 
-        expect(reducer(newState2, reset())).toEqual(initialState)
+        expect(reducer(newState2, reset())).toEqual(nextState)
     })
 })

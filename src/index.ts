@@ -22,11 +22,11 @@ type SubReaction = {
 }
 
 type Reaction<S extends string> = {
+    [ key in S ]: SubReaction
+} & {
     (payload?: any): Action
     type: string
     isActionCreator: boolean
-} & {
-    [ key in S ]: SubReaction
 }
 
 interface ReactionCreator {
@@ -61,11 +61,14 @@ interface DomainStateInitializer<S> {
 }
 
 interface Handler<S> {
-    (state: S, action: AnyAction): S
+    (state: S, action: AnyAction): Partial<S>
+}
+interface ReplaceHandler<S> {
+    (state: S, action: AnyAction): () => S
 }
 
 interface HandlerDictionary<S> {
-    [ key: string ]: Handler<S> | S | undefined
+    [ key: string ]: Handler<S> | ReplaceHandler<S> | S | undefined
 }
 
 
@@ -99,11 +102,14 @@ const camelCaseToConstCase = str => {
     return res
 }
 
-const isReaction = <S extends string>(entity: any): entity is Reaction<S> => entity.isActionCreator
+const isReaction = <S extends string>(entity: any): entity is (Reaction<S> | SubReaction) => 
+    !!entity.isActionCreator
 
-const configureReducersDictionary = <S>(branchOrReactionOrState: (Handler<S> | Reaction<any> | S)[]) => {
+const configureReducersDictionary = <S>(
+    branchOrReactionOrState: (Handler<S> | ReplaceHandler<S> | Reaction<any> | SubReaction | S)[]
+) => {
     const dictionary: HandlerDictionary<S> = {}
-    let actionCreatorBuffer = []
+    let actionCreatorBuffer: (Reaction<any> | SubReaction)[] = []
 
     branchOrReactionOrState.forEach(brs => {
         if (isReaction(brs)) {
@@ -207,7 +213,7 @@ export const createReactionSet = () => [] as ReactionSet
  */
 
 export const createReducer = <S>(initialStateOrInitFunction?: S | DomainStateInitializer<S>) => 
-    (...branchOrReactionOrState: (Handler<S> | Reaction<any> | S)[]): Reducer<S> => {
+    (...branchOrReactionOrState: (Handler<S> | ReplaceHandler<S> | Reaction<any> | SubReaction | S)[]): Reducer<S> => {
     const initialState = isFunction(initialStateOrInitFunction)
         ? initialStateOrInitFunction(domainInitialState())
         : initialStateOrInitFunction
