@@ -3,9 +3,16 @@ import { createWrapDispatch } from "./helpers"
 
 
 describe('selectors', () => {
-    const [ wrap ] = createWrapDispatch()
-    const [ forSelect, select ] = createSelect(state => state.profile)
+    interface InitialState {
+        user: null
+        byId: Object
+    }
+    interface State {
+        profile: InitialState
+    }
 
+    const [ wrap ] = createWrapDispatch()
+    const [ forSelect, select ] = createSelect<State, InitialState>(state => state.profile)
 
     const initialState = forSelect({
         user: null,
@@ -39,10 +46,13 @@ describe('selectors', () => {
 
     const reducer = createReducer(initialState)(
         userLogged,
-        () => ({ user: 'Sanya', byId: { 2: { name: 'Slava' }} })
+        () => ({ 
+            user: 'Sanya', 
+            byId: { 2: { name: 'Slava' }} 
+        })
     )
 
-    const mainState = {
+    const mainState: State = {
         profile: reducer(initialState, userLogged())
     }
 

@@ -1,4 +1,4 @@
-import { createWrap, Wrapper } from "../index"
+import { createWrap, Wrapper } from "../src/index"
 
 
 export const createWrapDispatch = (): [ Wrapper, any ] => {

@@ -34,7 +34,7 @@ describe('createReducer', () => {
             (state, { payload }) => () => ({ someKey: state.someKey, newKey: payload }),
 
             objectReaction,
-            (state, { payload: { andOther } }) => ({ andOther })
+            (_, { payload: { andOther } }) => ({ andOther })
         )
 
         expect(reducer(prevState, resetReaction())).toEqual({})

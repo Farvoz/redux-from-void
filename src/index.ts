@@ -1,4 +1,72 @@
 'use strict'
+import { Action, Dispatch, Reducer, AnyAction } from "redux"
+
+
+/**
+ * TYPES
+ */
+
+interface DispatchProvider {
+    dispatch: null | Dispatch
+}
+
+export interface Wrapper {
+    <S>(store: S): S
+    dispatchProvider: DispatchProvider
+}
+
+type SubReaction = {
+    (payload?: any): Action
+    type: string
+    isActionCreator: boolean
+}
+
+type Reaction<S extends string> = {
+    (payload?: any): Action
+    type: string
+    isActionCreator: boolean
+} & {
+    [ key in S ]: SubReaction
+}
+
+interface ReactionCreator {
+    (type: string): (...data: any[]) => any
+}
+
+interface ReactionsFactory<S extends string> {
+    [ propName: string ]: Reaction<S>
+}
+
+type ReactionSet = any
+
+interface ReactionsConfig {
+    formatter?: (inputString: string) => string,
+    separator?: string,
+    reactionSet?: ReactionSet
+    createReaction?: ReactionCreator
+}
+
+type ReducerCreator<S> = (
+    ...branches: any[]
+) => Reducer<S>
+
+
+interface DomainState {
+    allIds: number[]
+    byId: object
+}
+
+interface DomainStateInitializer<S> {
+    (defaultState: DomainState): S
+}
+
+interface Handler<S> {
+    (state: S, action: AnyAction): S
+}
+
+interface HandlerDictionary<S> {
+    [ key: string ]: Handler<S> | S | undefined
+}
 
 
 /**
@@ -6,12 +74,13 @@
  */
 
 const identity = value => value
-const defaultCreateReaction = type => payload => ({ type, payload })
+const defaultReactionCreator: ReactionCreator = type => payload => ({ type, payload })
 
 const isLetterInLowerCase = l => l.toLowerCase() === l
 const isLetterInUpperCase = l => !isLetterInLowerCase(l)
-const isFunction = functionToCheck => functionToCheck && {}.toString.call(functionToCheck) === '[object Function]'
-const domainInitialState = () => ({ allIds: [], byId: {} })
+const isFunction = (functionToCheck: any): functionToCheck is Function => 
+    functionToCheck && {}.toString.call(functionToCheck) === '[object Function]'
+const domainInitialState = () => ({ allIds: [], byId: {} } as DomainState)
 
 const camelCaseToConstCase = str => {
     let res = ''
@@ -30,18 +99,18 @@ const camelCaseToConstCase = str => {
     return res
 }
 
-const configureReducersDictionary = reducers => {
-    const dictionary = {}
+const isReaction = <S extends string>(entity: any): entity is Reaction<S> => entity.isActionCreator
+
+const configureReducersDictionary = <S>(branchOrReactionOrState: (Handler<S> | Reaction<any> | S)[]) => {
+    const dictionary: HandlerDictionary<S> = {}
     let actionCreatorBuffer = []
 
-    reducers.forEach(arg => {
-        if (arg.isActionCreator) {
-
-            actionCreatorBuffer.push(arg)
+    branchOrReactionOrState.forEach(brs => {
+        if (isReaction(brs)) {
+            actionCreatorBuffer.push(brs)
         } else {
-
             actionCreatorBuffer.forEach(currentActionCreator => {
-                dictionary[currentActionCreator.type] = arg
+                dictionary[ currentActionCreator.type ] = brs
             });
             actionCreatorBuffer = []
         }
@@ -73,7 +142,7 @@ export const createWrap = () => {
 
     wrap.dispatchProvider = dispatchProvider
 
-    return wrap
+    return wrap as Wrapper
 }
 
 
@@ -81,38 +150,40 @@ export const createWrap = () => {
  * ACTIONS
  */
 
+
 /**
  * A reactions creator factory wrapping by dispatch.
  * formatter takes only a word with a-zA-Z$_0-9 symbols.
  */
-export const reactions = (
-    wrap,
-    childrenNames = [],
-    config
+export const reactions = <S extends string>(
+    wrap: Wrapper,
+    childrenNames?: S[],
+    config?: ReactionsConfig
 ) => {
     const { formatter, separator, reactionSet, createReaction } = {
         formatter: camelCaseToConstCase,
         separator: '_',
         reactionSet: [],
-        createReaction: defaultCreateReaction,
+        createReaction: defaultReactionCreator,
         ...config,
     }
-    childrenNames.forEach(childName => {
+    childrenNames && childrenNames.forEach(childName => {
         reactionSet[ childName ] = []
     })
 
     return new Proxy({}, {
         get(_, prop) {
-            const propForLog = formatter(prop)
+            const propForLog = formatter(prop.toString())
             const reactionCreator = createReaction(propForLog)
 
-            const dispatchReaction = (...args) => wrap.dispatchProvider.dispatch(reactionCreator(...args))
+            const dispatchReaction: any = (...args) => 
+                wrap.dispatchProvider.dispatch(reactionCreator(...args))
             dispatchReaction.type = propForLog
             dispatchReaction.isActionCreator = true
 
             reactionSet.push(dispatchReaction)
 
-            childrenNames.forEach(name => {
+            childrenNames && childrenNames.forEach(name => {
                 const childPropForLog = propForLog + separator + formatter(name)
                 const childReactionCreator = createReaction(childPropForLog)
 
@@ -123,26 +194,27 @@ export const reactions = (
                 reactionSet[name].push(dispatchReaction[name])
             })
 
-            return dispatchReaction
+            return dispatchReaction as Reaction<S>
         }
-    })
+    }) as ReactionsFactory<S>
 }
 
-export const createReactionSet = () => []
+export const createReactionSet = () => [] as ReactionSet
 
 
 /**
  * REDUCERS
  */
 
-export const createReducer = (initialStateOrInitFunction) => (...args) => {
+export const createReducer = <S>(initialStateOrInitFunction?: S | DomainStateInitializer<S>) => 
+    (...branchOrReactionOrState: (Handler<S> | Reaction<any> | S)[]): Reducer<S> => {
     const initialState = isFunction(initialStateOrInitFunction)
         ? initialStateOrInitFunction(domainInitialState())
         : initialStateOrInitFunction
-    const dictionary = configureReducersDictionary(args)
+    const dictionary = configureReducersDictionary(branchOrReactionOrState)
 
     return (state = initialState, action) => {
-        const handler = dictionary[action.type]
+        const handler = dictionary[ action.type ]
 
         if (!handler)
             return state
@@ -169,8 +241,25 @@ export const createReducer = (initialStateOrInitFunction) => (...args) => {
 
 const BY_ID = 'byId'
 
-export const createSelect = (getSubState = identity) => {
-    const all = getSubState
+interface SelectorWrapper<P> {
+    (stateSlice: P): P
+}
+
+interface StateExtractor<S, P> {
+    (state: S): P
+}
+
+type UniversalSelector<S, P, K extends keyof P> = {
+    (state: any): S
+} & {
+    [ key in K ]: StateExtractor<S, any>
+} & {
+    [ BY_ID ]: (state: any, id: number) => any
+}
+
+export function createSelect<S, P>(getSubState: StateExtractor<S, P> = identity)
+    : [ SelectorWrapper<P>, UniversalSelector<S, P, keyof P> ] {
+    const all: any = getSubState
     const defineProperty = (key, value) => Object.defineProperty(all, key, { value })
 
     return [
