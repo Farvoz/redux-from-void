@@ -1,5 +1,5 @@
 'use strict'
-import { Action, Dispatch, Reducer, AnyAction } from "redux"
+import { Action, Dispatch, Reducer, AnyAction, Store } from "redux"
 
 
 /**
@@ -7,7 +7,7 @@ import { Action, Dispatch, Reducer, AnyAction } from "redux"
  */
 
 interface DispatchProvider {
-    dispatch: null | Dispatch
+    dispatch: Dispatch
 }
 
 export interface Wrapper {
@@ -46,26 +46,11 @@ interface ReactionsConfig {
     createReaction?: ReactionCreator
 }
 
-type ReducerCreator<S> = (
-    ...branches: any[]
-) => Reducer<S>
+type DomainStateInitializer<S> = (defaultState: S) => S
 
+type Handler<S> = (state: S, action: AnyAction) => Partial<S>
 
-interface DomainState {
-    allIds: number[]
-    byId: object
-}
-
-interface DomainStateInitializer<S> {
-    (defaultState: DomainState): S
-}
-
-interface Handler<S> {
-    (state: S, action: AnyAction): Partial<S>
-}
-interface ReplaceHandler<S> {
-    (state: S, action: AnyAction): () => S
-}
+type ReplaceHandler<S> = (state: S, action: AnyAction) => () => S
 
 interface HandlerDictionary<S> {
     [ key: string ]: Handler<S> | ReplaceHandler<S> | S | undefined
@@ -76,16 +61,16 @@ interface HandlerDictionary<S> {
  * INTERNAL
  */
 
-const identity = value => value
+const identity = <T>(value: T): T => value
 const defaultReactionCreator: ReactionCreator = type => payload => ({ type, payload })
 
-const isLetterInLowerCase = l => l.toLowerCase() === l
-const isLetterInUpperCase = l => !isLetterInLowerCase(l)
+const isLetterInLowerCase = (l: string) => l.toLowerCase() === l
+const isLetterInUpperCase = (l: string) => !isLetterInLowerCase(l)
 const isFunction = (functionToCheck: any): functionToCheck is Function => 
     functionToCheck && {}.toString.call(functionToCheck) === '[object Function]'
-const domainInitialState = () => ({ allIds: [], byId: {} } as DomainState)
+const domainInitialState = () => ({ allIds: [], byId: {} })
 
-const camelCaseToConstCase = str => {
+const camelCaseToConstCase = (str: string) => {
     let res = ''
 
     let isPrevLetterInDowncase = false
@@ -137,11 +122,11 @@ const configureReducersDictionary = <S>(
  * Creates the main function: wrap. Example: const store = wrap(configureStore()).
  */
 export const createWrap = () => {
-    const dispatchProvider = {
+    const dispatchProvider: { dispatch: null | Dispatch } = {
         dispatch: null
     }
 
-    const wrap = store => {
+    const wrap = (store: Store) => {
         dispatchProvider.dispatch = store.dispatch
         return store
     }
@@ -178,11 +163,11 @@ export const reactions = <S extends string>(
     })
 
     return new Proxy({}, {
-        get(_, prop) {
+        get(_: any, prop: string) {
             const propForLog = formatter(prop.toString())
             const reactionCreator = createReaction(propForLog)
 
-            const dispatchReaction: any = (...args) => 
+            const dispatchReaction: any = (...args: any[]) => 
                 wrap.dispatchProvider.dispatch(reactionCreator(...args))
             dispatchReaction.type = propForLog
             dispatchReaction.isActionCreator = true
@@ -193,7 +178,7 @@ export const reactions = <S extends string>(
                 const childPropForLog = propForLog + separator + formatter(name)
                 const childReactionCreator = createReaction(childPropForLog)
 
-                dispatchReaction[name] = (...args) => wrap.dispatchProvider.dispatch(childReactionCreator(...args))
+                dispatchReaction[name] = (...args: any[]) => wrap.dispatchProvider.dispatch(childReactionCreator(...args))
                 dispatchReaction[name].type = childPropForLog
                 dispatchReaction[name].isActionCreator = true
 
@@ -212,10 +197,10 @@ export const createReactionSet = () => [] as ReactionSet
  * REDUCERS
  */
 
-export const createReducer = <S>(initialStateOrInitFunction?: S | DomainStateInitializer<S>) => 
+export const createReducer = <S>(initialStateOrInitFunction: S | DomainStateInitializer<S> = identity) => 
     (...branchOrReactionOrState: (Handler<S> | ReplaceHandler<S> | Reaction<any> | SubReaction | S)[]): Reducer<S> => {
     const initialState = isFunction(initialStateOrInitFunction)
-        ? initialStateOrInitFunction(domainInitialState())
+        ? initialStateOrInitFunction(domainInitialState() as any)
         : initialStateOrInitFunction
     const dictionary = configureReducersDictionary(branchOrReactionOrState)
 
@@ -245,32 +230,35 @@ export const createReducer = <S>(initialStateOrInitFunction?: S | DomainStateIni
  * SELECTORS
  */
 
-interface SelectorWrapper<Slice> {
-    (stateSlice: Slice): Slice
-}
+type SelectorWrapper<Slice> = (stateSlice: Slice) => Slice
 
-interface StateExtractor<State, Slice> {
-    (state: State): Slice
-}
+type StateExtractor<State, R> = (state: State) => R
 
-type UniversalSelector<State, Slice, K extends keyof Slice> = {
+type UniversalSelector<State, Slice> = {
     (state: State): Slice
 } & {
-    [ key in K ]: StateExtractor<State, Slice[ key ]>
+    [ key in keyof Slice ]: StateExtractor<State, Slice[ key ]>
 }
 
-export function createSelect<State, Slice>(getSubState: StateExtractor<State, Slice> = identity)
-    : [ SelectorWrapper<Slice>, UniversalSelector<State, Slice, keyof Slice> ] {
+type Selector<State> = (state: State) => any
+
+export function createSelect<State, Slice extends { [ key: string ]: any }>(
+    getSubState: StateExtractor<State, Slice>
+): [ SelectorWrapper<Slice>, UniversalSelector<State, Slice> ] {
     const all: any = getSubState
-    const defineProperty = (key: string, value: (state: State) => Slice) => 
-        Object.defineProperty(all, key, { value })
+    const defineProperty = <State>(key: string, selector: Selector<State>): void => 
+        Object.defineProperty(all, key, { value: selector })
 
     return [
         initialState => {
             const keys = Object.keys(initialState)
 
             keys.forEach(key => {
-                defineProperty(key, state => getSubState(state)[ key ])
+                defineProperty(key, (state: State) => {
+                    const slice = getSubState(state)
+                    
+                    return slice[ key ]
+                })
             })
 
             return initialState
