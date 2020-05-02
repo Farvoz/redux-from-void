@@ -21,7 +21,8 @@ describe('createReducer', () => {
         resetReaction,
         stringReaction,
         numberReaction,
-        objectReaction
+        objectReaction,
+        reactionOneArg
     } = reactions(wrap)
 
     test('without a first argument', () => {
@@ -47,7 +48,10 @@ describe('createReducer', () => {
             }),
 
             objectReaction,
-            (_, { payload: { andOther } }) => ({ andOther })
+            (_, { payload: { andOther } }) => ({ andOther }),
+
+            reactionOneArg,
+            state => ({ someKey: state.someKey })
         )
 
         expect(reducer(initState, resetReaction())).toEqual(nextState)

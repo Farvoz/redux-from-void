@@ -3,21 +3,62 @@ import { createWrapDispatch } from "./helpers"
 
 
 describe('reactions', () => {
+    type EmptyAction = {
+        type: 'emptyReaction'
+        payload: never
+    }
+
+    type NumberAction = {
+        type: 'numberReaction',
+        payload: number
+    }
+
+    type ObjectReaction = {
+        type: 'objectReaction'
+        payload: object
+    }
+
     const [ wrap ] = createWrapDispatch()
 
-    const reactionFactory1 = reactions(wrap)
     const {
         emptyReaction,
         numberReaction,
         objectReaction
-    } = reactionFactory1
+    } = reactions<EmptyAction | NumberAction | ObjectReaction>(wrap)
 
-    const reactionFactory2 = reactions(wrap, [ 'custom', 'custom2' ])
+    type EmptyReaction2 = {
+        type: 'emptyReaction2',
+        payload: never
+    }
+
+    type NumberReactionWithCustomChild = {
+        type: 'numberReactionWithCustomChild',
+        payload: number
+    }
+
+    type ObjectReactionWithCustomChild = {
+        type: 'objectReactionWithCustomChild',
+        payload: { id: number }
+    }
+
+    type CustomSubtype = {
+        type: 'custom'
+        payload: never
+    }
+
+    type Custom2Subtype = {
+        type: 'custom2'
+        payload: number
+    }
+
     const {
         emptyReaction2,
         numberReactionWithCustomChild,
         objectReactionWithCustomChild
-    } = reactionFactory2
+    } = reactions<EmptyReaction2 
+        | NumberReactionWithCustomChild 
+        | ObjectReactionWithCustomChild
+        , CustomSubtype | Custom2Subtype>(wrap, [ 'custom', 'custom2' ])
 
 
     test('initialize', () => {
@@ -37,7 +78,7 @@ describe('reactions', () => {
             expect(action.isActionCreator).toBeTruthy()
         })
 
-        expect(emptyReaction.custom).toBeUndefined()
+        expect((emptyReaction as any).custom).toBeUndefined()
         expect(emptyReaction2.custom.type).toBe('EMPTY_REACTION2_CUSTOM')
         expect((emptyReaction2 as any).anotherCustom).toBeUndefined()
     })
@@ -46,7 +87,9 @@ describe('reactions', () => {
     test('dispatching main', () => {
         expect(emptyReaction()).toEqual({ type: 'EMPTY_REACTION', payload: undefined })
         expect(emptyReaction2()).toEqual({ type: 'EMPTY_REACTION2', payload: undefined })
-        expect(numberReaction(123)).toEqual({ type: 'NUMBER_REACTION', payload: 123 })
+
+        expect(numberReaction(12)).toEqual({ type: 'NUMBER_REACTION', payload: 123 })
+
         expect(numberReactionWithCustomChild(567)).toEqual({ type: 'NUMBER_REACTION_WITH_CUSTOM_CHILD', payload: 567 })
         expect(objectReaction({ id: 123 })).toEqual({ type: 'OBJECT_REACTION', payload: { id: 123 }})
         expect(objectReactionWithCustomChild({ id: 456 })).toEqual({ type: 'OBJECT_REACTION_WITH_CUSTOM_CHILD', payload: { id: 456 }})
@@ -56,7 +99,8 @@ describe('reactions', () => {
     test('dispatching custom', () => {
         expect(emptyReaction2.custom()).toEqual({ type: 'EMPTY_REACTION2_CUSTOM', payload: undefined })
         expect(numberReactionWithCustomChild.custom(123)).toEqual({ type: 'NUMBER_REACTION_WITH_CUSTOM_CHILD_CUSTOM', payload: 123 })
-        expect(objectReactionWithCustomChild.custom({ id: 123 })).toEqual({ type: 'OBJECT_REACTION_WITH_CUSTOM_CHILD_CUSTOM', payload: { id: 123 } })
+        expect(objectReactionWithCustomChild.custom(123)).toEqual({ type: 'OBJECT_REACTION_WITH_CUSTOM_CHILD_CUSTOM', payload: 123 })
+        expect(objectReactionWithCustomChild.custom2(123)).toEqual({ type: 'OBJECT_REACTION_WITH_CUSTOM_CHILD_CUSTOM', payload: 123 })
     })
 
 
