@@ -5,16 +5,43 @@ import { createWrapDispatch } from "./helpers"
 describe('createReducer', () => {
     const [ wrap ] = createWrapDispatch()
 
-    const initState = { 
+    interface State {
+        someKey: string,
+        newKey: number,
+        andOther: any[]
+    }
+
+    const initState: State = {
         someKey: 'someValue', 
         newKey: 0,
         andOther: [] 
     }
 
-    const nextState = {
+    const nextState: State = {
         someKey: '',
         newKey: 1,
         andOther: []
+    }
+
+    type ResetReaction = {
+        type: 'resetReaction'
+        payload: never
+    }
+    type StringReaction = {
+        type: 'stringReaction',
+        payload: never
+    }
+    type NumberReaction = {
+        type: 'numberReaction',
+        payload: number
+    }
+    type ObjectReaction = {
+        type: 'objectReaction',
+        payload: object
+    }
+    type ReactionOneArg = {
+        type: 'reactionOneArg',
+        payload: never
     }
 
     const {
@@ -23,22 +50,25 @@ describe('createReducer', () => {
         numberReaction,
         objectReaction,
         reactionOneArg
-    } = reactions(wrap)
+    } = reactions<ResetReaction | StringReaction | NumberReaction | ObjectReaction | ReactionOneArg>(wrap)
 
     test('without a first argument', () => {
         const reducer = createReducer()()
 
         expect(reducer).toBeInstanceOf(Function)
-        expect(reducer(initState, objectReaction())).toBe(initState)
+        expect(reducer(initState, resetReaction())).toBe(initState)
     })
 
     test('a state after a reducer calling', () => {
-        const reducer = createReducer(nextState)(
+        const reducer = createReducer<State>(nextState)(
             resetReaction,
             nextState,
 
             stringReaction,
-            () => ({ someKey: 'string' }),
+            () => ({
+                someKey: 'string',
+                asd: 'asda'
+            }),
 
             numberReaction,
             (state, { payload }) => () => ({ 
@@ -74,13 +104,34 @@ describe('createReducer', () => {
     })
 
     test('an array of reactions', () => {
-        const nextState = { count: 0 }
+        interface State {
+            count: number
+        }
+        const nextState: State = { count: 0 }
         const $et = createReactionSet()
+
+        type ResetReaction = {
+            type: 'reset'
+            payload: never
+        }
+        type Reaction1 = {
+            type: 'reaction1'
+            payload: never
+        }
+        type Reaction2 = {
+            type: 'reaction2'
+            payload: never
+        }
+
+        type DoneSubReation = {
+            type: 'done'
+            payload: never
+        }
         const {
             reset,
             reaction1,
             reaction2
-        } = reactions(wrap, [ 'done' ], { reactionSet: $et })
+        } = reactions<ResetReaction | Reaction1 | Reaction2, DoneSubReation>(wrap, [ 'done' ], { reactionSet: $et })
 
         const {
             reactionWithoutSet
@@ -89,7 +140,7 @@ describe('createReducer', () => {
         const handler = ({ count }) => ({ count: count + 1 })
         const handler2 = ({ count }) => ({ count: count + 10 })
 
-        const reducer = createReducer(nextState)(
+        const reducer = createReducer<State>(nextState)(
             ...$et,
             handler,
 
@@ -111,7 +162,6 @@ describe('createReducer', () => {
         const newState2 = reducer(newState1, reaction2.done())
 
         expect(newState2).toEqual({ count: 12 })
-
         expect(reducer(newState2, reset())).toEqual(nextState)
     })
 })

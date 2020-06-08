@@ -1,4 +1,3 @@
-'use strict'
 import { Dispatch, Reducer, AnyAction, Store } from "redux"
 
 
@@ -15,24 +14,11 @@ export interface Wrapper {
     dispatchProvider: DispatchProvider
 }
 
-type FindedType<A, T> = Extract<A, { type: T }>
+export type FindedType<A, T> = Extract<A, { type: T }>
+export type VoidLess<T> = Exclude<T, void>
 
 type WithPayload<A, P> = (payload: P) => A
 type WithoutPayload<A> = () => A
-
-type SubReaction<A extends { payload: any }> = {
-    type: string
-    isActionCreator: boolean
-} & (A[ 'payload' ] extends never ? WithoutPayload<A> : WithPayload<A, A[ 'payload' ]>)
-
-type Reaction<A extends { type: string, payload: any }, U extends { type: S, payload: any } | void, S extends string> = {
-    type: string
-    isActionCreator: boolean
-} & (A[ 'payload' ] extends never ? WithoutPayload<A> : WithPayload<A, A ['payload']>) & 
-    (U extends void ? {} : { [ key in S ]: SubReaction<Extract<Extract<U, { type: Extract<U, { type: S }>[ 'type' ] }>, { payload: any }>> })
-
-    
-// }) as { [ T in A[ 'type' ] ]: Reaction<{ type: T, payload: Extract<A, { type: T }>[ 'payload' ] }, U, S> }
 
 
 type ReactionSet = any
@@ -89,14 +75,14 @@ const camelCaseToConstCase = (str: string) => {
     return res
 }
 
-const isReaction = <S extends string>(entity: any): entity is (Reaction<any, any, S> | SubReaction<any>) => 
+const isReaction = (entity: any): entity is (Reaction<any, any> | SubReaction<any>) => 
     !!entity.isActionCreator
 
 const configureReducersDictionary = <S>(
-    branchOrReactionOrState: (Handler<S> | ReplaceHandler<S> | Reaction<any, any, any> | SubReaction<any> | S)[]
+    branchOrReactionOrState: (Handler<S> | ReplaceHandler<S> | Reaction<any, any> | SubReaction<any> | S)[]
 ) => {
     const dictionary: HandlerDictionary<S> = {}
-    let actionCreatorBuffer: (Reaction<any, any, any> | SubReaction<any>)[] = []
+    let actionCreatorBuffer: (Reaction<any, any> | SubReaction<any>)[] = []
 
     branchOrReactionOrState.forEach(brs => {
         if (isReaction(brs)) {
@@ -144,13 +130,29 @@ export const createWrap = () => {
  */
 
 
+type SubReaction<A extends { type: string, payload: any }> = {
+    type: string
+    isActionCreator: boolean
+} & (A[ 'payload' ] extends never ? WithoutPayload<A> : WithPayload<A, A[ 'payload' ]>)
+
+
+export type Reaction<A extends { type: string, payload: any }, U extends { type: string, payload: any }> = {
+    type: A[ 'type' ]
+    isActionCreator: boolean
+} & (A[ 'payload' ] extends never ? WithoutPayload<A> : WithPayload<A, A ['payload']>) & 
+    { [ K in U[ 'type' ] ]: SubReaction<{ type: K, payload: FindedType<U, K>[ 'payload' ] }> }
+
+    
 /**
  * A reactions creator factory wrapping by dispatch.
  * formatter takes only a word with a-zA-Z$_0-9 symbols.
  */
-export const reactions = <A extends { type: string, payload: any }, U extends { payload: any } | void = void, S extends string = string>(
+export const reactions = <
+    A extends { type: string, payload: any }, 
+    U extends { type: string, payload: any } = any
+>(
     wrap: Wrapper,
-    childrenNames?: S[],
+    childrenNames?: string[],
     config?: ReactionsConfig
 ) => {
     const { formatter, separator, reactionSet } = {
@@ -187,7 +189,7 @@ export const reactions = <A extends { type: string, payload: any }, U extends { 
 
             return dispatchReaction
         }
-    }) as { [ T in A[ 'type' ] ]: Reaction<{ type: T, payload: FindedType<A, T>[ 'payload' ] }, U, S> }
+    }) as { [ T in A[ 'type' ] ]: Reaction<{ type: T, payload: FindedType<A, T>[ 'payload' ] }, U> }
 }
 
 export const createReactionSet = () => [] as ReactionSet
@@ -198,7 +200,7 @@ export const createReactionSet = () => [] as ReactionSet
  */
 
 export const createReducer = <S>(initialStateOrInitFunction: S | DomainStateInitializer<S> = identity) => 
-    (...branchOrReactionOrState: (Handler<S> | ReplaceHandler<S> | Reaction<any, any, any> | SubReaction<any> | S)[]): Reducer<S> => {
+    (...branchOrReactionOrState: (Handler<S> | ReplaceHandler<S> | Reaction<any, any> | SubReaction<any> | S)[]): Reducer<S> => {
     const initialState = isFunction(initialStateOrInitFunction)
         ? initialStateOrInitFunction(domainInitialState() as any)
         : initialStateOrInitFunction
@@ -221,7 +223,7 @@ export const createReducer = <S>(initialStateOrInitFunction: S | DomainStateInit
         return {
             ...state,
             ...newSlice
-        }
+        } as S
     }
 }
 

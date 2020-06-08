@@ -3,9 +3,15 @@ import { createWrapDispatch } from "./helpers"
 
 
 describe('selectors', () => {
+    interface Entity {
+        name: string
+    }
+
     interface StateSlice {
         user: string
-        byId: Object
+        byId: {
+            [ key: number ]: Entity
+        }
     }
     interface State {
         profile: StateSlice
@@ -38,7 +44,12 @@ describe('selectors', () => {
         expect(select.byId(mainState)[ 2 ]).toBeUndefined()
     })
 
-    const { userLogged } = reactions(wrap)
+    type UserLogged = {
+        type: 'userLogged'
+        payload: never
+    }
+
+    const { userLogged } = reactions<UserLogged>(wrap)
     const reducer = createReducer(initialState)(
         userLogged,
         () => ({ 
