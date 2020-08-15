@@ -66,13 +66,12 @@ describe('createReducer', () => {
 
             stringReaction,
             () => ({
-                someKey: 'string',
-                asd: 'asda'
+                someKey: 'string'
             }),
 
             numberReaction,
-            (state, { payload }) => () => ({ 
-                someKey: state.someKey, 
+            (state, { payload }) => () => ({
+                someKey: state.someKey,
                 newKey: payload,
                 andOther: [ 'andOther' ]
             }),
@@ -81,7 +80,7 @@ describe('createReducer', () => {
             (_, { payload: { andOther } }) => ({ andOther }),
 
             reactionOneArg,
-            state => ({ someKey: state.someKey })
+            (state: State) => ({ someKey: state.someKey })
         )
 
         expect(reducer(initState, resetReaction())).toEqual(nextState)
@@ -137,8 +136,8 @@ describe('createReducer', () => {
             reactionWithoutSet
         } = reactions(wrap, [ 'ww' ])
 
-        const handler = ({ count }) => ({ count: count + 1 })
-        const handler2 = ({ count }) => ({ count: count + 10 })
+        const handler = ({ count }: State) => ({ count: count + 1 })
+        const handler2 = ({ count }: State) => ({ count: count + 10 })
 
         const reducer = createReducer<State>(nextState)(
             ...$et,

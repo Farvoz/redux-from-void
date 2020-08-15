@@ -15,11 +15,22 @@ export interface Wrapper {
 }
 
 export type FindedType<A, T> = Extract<A, { type: T }>
-export type VoidLess<T> = Exclude<T, void>
+// export type VoidLess<T> = Exclude<T, void>
 
 type WithPayload<A, P> = (payload: P) => A
 type WithoutPayload<A> = () => A
 
+
+type SubReaction<A extends { type: string, payload: any }> = {
+    type: string
+    isActionCreator: boolean
+} & (A[ 'payload' ] extends never ? WithoutPayload<A> : WithPayload<A, A[ 'payload' ]>)
+
+export type Reaction<A extends { type: string, payload: any }, U extends { type: string, payload: any }> = {
+    type: A[ 'type' ]
+    isActionCreator: boolean
+} & (A[ 'payload' ] extends never ? WithoutPayload<A> : WithPayload<A, A ['payload']>) &
+    { [ K in U[ 'type' ] ]: SubReaction<{ type: K, payload: FindedType<U, K>[ 'payload' ] }> }
 
 type ReactionSet = any
 
@@ -27,17 +38,21 @@ interface ReactionsConfig {
     formatter?: (inputString: string) => string,
     separator?: string,
     reactionSet?: ReactionSet
+
+    // TODO: add custom createReaction
     // createReaction?: ReactionCreator
 }
 
 type DomainStateInitializer<S> = (defaultState: S) => S
 
-type Handler<S> = (state: S, action: AnyAction) => Partial<S>
-
+type Handler<S> = (state: S, action: AnyAction) => { [ K in Exclude<any, keyof S> ]: S[K] }
+type StateHandler<S> = (state: S) => { [ K in Exclude<any, keyof S> ]: S[K] }
 type ReplaceHandler<S> = (state: S, action: AnyAction) => () => S
 
+type Branch<S> = Handler<S> | StateHandler<S> | ReplaceHandler<S> | Reaction<any, any> | SubReaction<any> | S
+
 interface HandlerDictionary<S> {
-    [ key: string ]: Handler<S> | ReplaceHandler<S> | S | undefined
+    [ key: string ]: Handler<S> | StateHandler<S> | ReplaceHandler<S> | S | undefined
 }
 
 
@@ -79,7 +94,7 @@ const isReaction = (entity: any): entity is (Reaction<any, any> | SubReaction<an
     !!entity.isActionCreator
 
 const configureReducersDictionary = <S>(
-    branchOrReactionOrState: (Handler<S> | ReplaceHandler<S> | Reaction<any, any> | SubReaction<any> | S)[]
+    branchOrReactionOrState: Branch<S>[]
 ) => {
     const dictionary: HandlerDictionary<S> = {}
     let actionCreatorBuffer: (Reaction<any, any> | SubReaction<any>)[] = []
@@ -128,20 +143,6 @@ export const createWrap = () => {
 /**
  * ACTIONS
  */
-
-
-type SubReaction<A extends { type: string, payload: any }> = {
-    type: string
-    isActionCreator: boolean
-} & (A[ 'payload' ] extends never ? WithoutPayload<A> : WithPayload<A, A[ 'payload' ]>)
-
-
-export type Reaction<A extends { type: string, payload: any }, U extends { type: string, payload: any }> = {
-    type: A[ 'type' ]
-    isActionCreator: boolean
-} & (A[ 'payload' ] extends never ? WithoutPayload<A> : WithPayload<A, A ['payload']>) & 
-    { [ K in U[ 'type' ] ]: SubReaction<{ type: K, payload: FindedType<U, K>[ 'payload' ] }> }
-
     
 /**
  * A reactions creator factory wrapping by dispatch.
@@ -199,8 +200,8 @@ export const createReactionSet = () => [] as ReactionSet
  * REDUCERS
  */
 
-export const createReducer = <S>(initialStateOrInitFunction: S | DomainStateInitializer<S> = identity) => 
-    (...branchOrReactionOrState: (Handler<S> | ReplaceHandler<S> | Reaction<any, any> | SubReaction<any> | S)[]): Reducer<S> => {
+export const createReducer = <S>(initialStateOrInitFunction: S | DomainStateInitializer<S> = identity) =>
+    (...branchOrReactionOrState: Branch<S>[]): Reducer<S> => {
     const initialState = isFunction(initialStateOrInitFunction)
         ? initialStateOrInitFunction(domainInitialState() as any)
         : initialStateOrInitFunction
