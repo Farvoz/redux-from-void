@@ -1,4 +1,4 @@
-import { Action, Dispatch, Reducer, AnyAction } from "redux";
+import { Dispatch, Reducer, AnyAction } from "redux";
 /**
  * TYPES
  */
@@ -9,34 +9,53 @@ export interface Wrapper {
     <S>(store: S): S;
     dispatchProvider: DispatchProvider;
 }
-declare type SubReaction = {
-    (payload?: any): Action;
+export declare type FindedType<A, T> = Extract<A, {
+    type: T;
+}>;
+declare type WithPayload<A, P> = (payload: P) => A;
+declare type WithoutPayload<A> = () => A;
+declare type SubReaction<A extends {
+    type: string;
+    payload: any;
+}> = {
     type: string;
     isActionCreator: boolean;
-};
-declare type Reaction<S extends string> = {
-    [key in S]: SubReaction;
-} & {
-    (payload?: any): Action;
+} & (A['payload'] extends never ? WithoutPayload<A> : WithPayload<A, A['payload']>);
+export declare type Reaction<A extends {
     type: string;
+    payload: any;
+}, U extends {
+    type: string;
+    payload: any;
+}> = {
+    type: A['type'];
     isActionCreator: boolean;
+} & (A['payload'] extends never ? WithoutPayload<A> : WithPayload<A, A['payload']>) & {
+    [K in U['type']]: SubReaction<{
+        type: K;
+        payload: FindedType<U, K>['payload'];
+    }>;
 };
-interface ReactionCreator {
-    (type: string): (...data: any[]) => any;
-}
-interface ReactionsFactory<S extends string> {
-    [propName: string]: Reaction<S>;
-}
 declare type ReactionSet = any;
 interface ReactionsConfig {
     formatter?: (inputString: string) => string;
     separator?: string;
     reactionSet?: ReactionSet;
-    createReaction?: ReactionCreator;
 }
 declare type DomainStateInitializer<S> = (defaultState: S) => S;
-declare type Handler<S> = (state: S, action: AnyAction) => Partial<S>;
-declare type ReplaceHandler<S> = (state: S, action: AnyAction) => () => S;
+declare type ReduceHandler<S> = (state: S, action: AnyAction) => Partial<S>;
+declare type Handler<S> = {
+    reduce: ReduceHandler<S>;
+};
+declare type ReplaceHandlerS<S> = {
+    replaceBy: S;
+};
+declare type ReplaceHandler<S> = (state: S, action: AnyAction) => S;
+declare type ReplaceHandlerReduce<S> = {
+    replaceBy: ReplaceHandler<S>;
+};
+declare type ReplaceHandlerDescriptor<S> = ReplaceHandlerS<S> | ReplaceHandlerReduce<S>;
+declare type Branch<S> = Handler<S> | ReplaceHandlerDescriptor<S> | Reaction<any, any> | SubReaction<any>;
 /**
  * FOR EXPORT:
  */
@@ -54,12 +73,25 @@ export declare const createWrap: () => Wrapper;
  * A reactions creator factory wrapping by dispatch.
  * formatter takes only a word with a-zA-Z$_0-9 symbols.
  */
-export declare const reactions: <S extends string>(wrap: Wrapper, childrenNames?: S[] | undefined, config?: ReactionsConfig | undefined) => ReactionsFactory<S>;
+export declare const reactions: <A extends {
+    type: string;
+    payload: any;
+}, U extends {
+    type: string;
+    payload: any;
+} = any>(wrap: Wrapper, childrenNames?: string[] | undefined, config?: ReactionsConfig | undefined) => { [T in A["type"]]: Reaction<{
+    type: T;
+    payload: Extract<A, {
+        type: T;
+    }>["payload"];
+}, U>; };
 export declare const createReactionSet: () => any;
 /**
  * REDUCERS
  */
-export declare const createReducer: <S>(initialStateOrInitFunction?: S | DomainStateInitializer<S>) => (...branchOrReactionOrState: (SubReaction | Reaction<any> | S | Handler<S> | ReplaceHandler<S>)[]) => Reducer<S, AnyAction>;
+export declare const createReducer: <S>(initialStateOrInitFunction?: S | DomainStateInitializer<S>) => (...branchOrReactionOrState: Branch<S>[]) => Reducer<S, AnyAction>;
+export declare const merge: <S>(handler: ReduceHandler<S>) => Handler<S>;
+export declare const set: <S>(state: S | ReplaceHandler<S>) => ReplaceHandlerDescriptor<S>;
 /**
  * SELECTORS
  */

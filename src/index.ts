@@ -45,14 +45,27 @@ interface ReactionsConfig {
 
 type DomainStateInitializer<S> = (defaultState: S) => S
 
-type Handler<S> = (state: S, action: AnyAction) => { [ K in Exclude<any, keyof S> ]: S[K] }
-type StateHandler<S> = (state: S) => { [ K in Exclude<any, keyof S> ]: S[K] }
-type ReplaceHandler<S> = (state: S, action: AnyAction) => () => S
+type ReduceHandler<S> = (state: S, action: AnyAction) => Partial<S>
+type Handler<S> = {
+    reduce: ReduceHandler<S>
+}
 
-type Branch<S> = Handler<S> | StateHandler<S> | ReplaceHandler<S> | Reaction<any, any> | SubReaction<any> | S
+type ReplaceHandlerS<S> = {
+    replaceBy: S
+}
+type ReplaceHandler<S> = (state: S, action: AnyAction) => S
+type ReplaceHandlerReduce<S> = {
+    replaceBy: ReplaceHandler<S>
+}
+type ReplaceHandlerDescriptor<S> = ReplaceHandlerS<S> | ReplaceHandlerReduce<S>
+
+type Branch<S> = Handler<S>
+    | ReplaceHandlerDescriptor<S>
+    | Reaction<any, any>
+    | SubReaction<any>
 
 interface HandlerDictionary<S> {
-    [ key: string ]: Handler<S> | StateHandler<S> | ReplaceHandler<S> | S | undefined
+    [ key: string ]: Handler<S> | ReplaceHandlerDescriptor<S>
 }
 
 
@@ -71,6 +84,9 @@ const isLetterInLowerCase = (l: string) => l.toLowerCase() === l
 const isLetterInUpperCase = (l: string) => !isLetterInLowerCase(l)
 const isFunction = (functionToCheck: any): functionToCheck is Function => 
     functionToCheck && {}.toString.call(functionToCheck) === '[object Function]'
+const isReplaceHandler = <S>(handler: any): handler is ReplaceHandlerDescriptor<S> =>
+    !!handler.replaceBy
+
 const domainInitialState = () => ({ allIds: [], byId: {} })
 
 const camelCaseToConstCase = (str: string) => {
@@ -213,19 +229,35 @@ export const createReducer = <S>(initialStateOrInitFunction: S | DomainStateInit
         if (!handler)
             return state
 
-        if (!isFunction(handler))
-            return handler
+        if (isReplaceHandler(handler)) {
+            if (isFunction(handler.replaceBy)) {
+                return handler.replaceBy(state, action)
+            } else {
+                return handler.replaceBy
+            }
+        }
 
-        const newSlice = handler(state, action)
-
-        if (isFunction(newSlice))
-            return newSlice()
+        const newSlice = handler.reduce(state, action)
 
         return {
             ...state,
             ...newSlice
         } as S
     }
+}
+
+export const merge = <S>(handler: ReduceHandler<S>): Handler<S> => {
+
+    return {
+        reduce: handler
+    }
+}
+
+export const set = <S>(state: S | ReplaceHandler<S>) => {
+
+    return {
+        replaceBy: state
+    } as ReplaceHandlerDescriptor<S>
 }
 
 

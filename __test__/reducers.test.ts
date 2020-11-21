@@ -1,4 +1,4 @@
-import { createReactionSet, createReducer, reactions } from "../src/index"
+import { createReactionSet, createReducer, merge, reactions, set } from "../src/index"
 import { createWrapDispatch } from "./helpers"
 
 
@@ -62,25 +62,25 @@ describe('createReducer', () => {
     test('a state after a reducer calling', () => {
         const reducer = createReducer<State>(nextState)(
             resetReaction,
-            nextState,
+            set(nextState),
 
             stringReaction,
-            () => ({
-                someKey: 'string'
-            }),
+            merge(() => ({
+                someKey: 'string',
+            })),
 
             numberReaction,
-            (state, { payload }) => () => ({
+            set((state, { payload }) => ({
                 someKey: state.someKey,
                 newKey: payload,
                 andOther: [ 'andOther' ]
-            }),
+            })),
 
             objectReaction,
-            (_, { payload: { andOther } }) => ({ andOther }),
+            merge((_, { payload: { andOther } }) => ({ andOther })),
 
             reactionOneArg,
-            (state: State) => ({ someKey: state.someKey })
+            merge((state: State) => ({ someKey: state.someKey }))
         )
 
         expect(reducer(initState, resetReaction())).toEqual(nextState)
@@ -136,8 +136,8 @@ describe('createReducer', () => {
             reactionWithoutSet
         } = reactions(wrap, [ 'ww' ])
 
-        const handler = ({ count }: State) => ({ count: count + 1 })
-        const handler2 = ({ count }: State) => ({ count: count + 10 })
+        const handler = merge(({ count }: State) => ({ count: count + 1 }))
+        const handler2 = merge(({ count }: State) => ({ count: count + 10 }))
 
         const reducer = createReducer<State>(nextState)(
             ...$et,
@@ -148,7 +148,7 @@ describe('createReducer', () => {
 
             reset,
             reactionWithoutSet.ww,
-            nextState
+            set(nextState)
         )
 
         const newState1 = reducer(
